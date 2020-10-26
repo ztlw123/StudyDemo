@@ -12,9 +12,11 @@ import java.util.Set;
 
 /**
  * @Author zjh
- * @Date 2019/03/26,16:03
+ * @Date 2020/10/26,16:03
  */
 public class ServerHandler implements Runnable {
+
+    private static int count = 0;
 
     private Selector selector;
     private ServerSocketChannel serverChannel;
@@ -55,14 +57,12 @@ public class ServerHandler implements Runnable {
 
                     handleInput(key);
                 }
-
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        if(selector != null) {
+        if (selector != null) {
             try {
                 selector.close();
             } catch (IOException e) {
@@ -72,9 +72,9 @@ public class ServerHandler implements Runnable {
     }
 
     private void handleInput(SelectionKey key) throws IOException {
-        if(key.isValid()) {
-            //处理新接入消息
-            if(key.isAcceptable()) {
+        if (key.isValid()) {
+            //处理新接入消息，即有新连接产生，就为其新注册一个SocketChannel，该Channel关注事件为读事件
+            if (key.isAcceptable()) {
                 ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
                 SocketChannel sc = ssc.accept();
                 sc.configureBlocking(false);
@@ -86,15 +86,20 @@ public class ServerHandler implements Runnable {
                 ByteBuffer buffer = ByteBuffer.allocate(1024);
 
                 int num = sc.read(buffer);
-                if (num>0) {
+                if (num > 0) {
                     buffer.flip();
                     byte[] bytes = new byte[buffer.remaining()];
                     buffer.get(bytes);
 
-                    System.out.println("服务器收到消息：" + new String(bytes));
+                    String clientMessage = new String(bytes);
+                    System.out.println("Server: receives clientMessage->" + clientMessage);
+                    if (clientMessage.startsWith("I am the client")) {
+                        String serverResponseWords =
+                                "I am the server, and you are the " + (++count) + "th client.";
+                    }
 
                     //发回复
-                    byte[] res = "已收到消息".getBytes();
+                    byte[] res = clientMessage.getBytes();
                     ByteBuffer writeBuf = ByteBuffer.allocate(res.length);
                     writeBuf.put(res);
                     writeBuf.flip();
